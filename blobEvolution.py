@@ -359,7 +359,7 @@ class Meat:
         if self.food <= 0:
             self.alive = False
 
-for i in range(10):
+for i in range(100):
     a = False
     r = randint(0,2)
     if r == 2:
