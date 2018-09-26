@@ -26,19 +26,20 @@ screenHeight = 600
 screenWidth = 600
 drag = 0.008
 mutationMult = 1 # Changes the magnitude of mutations. Don't set this too high!
+randomStartMult = 0.2
 wallElasticity = 1.8
 plantCooldown = 200
-plantInterval = 20
-plantFood = 350
+plantInterval = 18
+plantFood = 300
 meatFood = 600
 meatFoodDroppedMult = 0.6
 frame = 0
-aggroFalseBuff = 1.3
+aggroFalseBuff = 1.5
 aggroTrueBuff = 1.2
 reproThreshold = 5000
 immunityTime = 500
 accMult = 0.6
-speedMult = 1
+speedMult = 0.8
 speedLimitMod = 50
 sizeHealthBuff = 2
 
@@ -319,9 +320,9 @@ class Blob:
         if self.pos[1] > screenHeight-5:
             self.vel[1] *= -wallElasticity
             self.pos[1] -= 1
-        self.vel[0] = min(max(self.vel[0],-self.speed*speedLimitMod),\
+        self.vel[0] = min(max(self.vel[0],-self.effSpd*speedLimitMod),\
         self.speed*speedLimitMod)
-        self.vel[1] = min(max(self.vel[1],-self.speed*speedLimitMod),\
+        self.vel[1] = min(max(self.vel[1],-self.effSpd*speedLimitMod),\
         self.speed*speedLimitMod)
         if self.attackCooldown > 0:
             self.attackCooldown -= 2
@@ -359,15 +360,17 @@ class Meat:
         if self.food <= 0:
             self.alive = False
 
-for i in range(100):
+for i in range(15):
     a = False
     r = randint(0,2)
+    rm = randomStartMult
     if r == 2:
         a = True
     blobs.append(Blob([uniform(10,screenWidth-10),uniform(10,\
-    screenHeight-10)],[0,0],uniform(0.008,0.012)*speedMult,a,uniform(40,60),\
-    1,uniform(4,6),uniform(30,45),uniform(40,60),\
-    reproThreshold/2,[uniform(0,255),uniform(0,255),uniform(0,255)]))
+    screenHeight-10)],[0,0],uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult,a,\
+    uniform(50-10*rm,50+10*rm),1,uniform(5-1*rm,5+1*rm),\
+    uniform(40-5*rm,40+5*rm),uniform(50-10*rm,50+10*rm),reproThreshold/2,\
+    [uniform(0,255),uniform(0,255),uniform(0,255)]))
 
 for i in range(30):
     plants.append(Plant([uniform(10,screenWidth-10),\
