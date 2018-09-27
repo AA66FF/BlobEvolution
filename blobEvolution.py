@@ -7,7 +7,6 @@ Todo:
   Clean up more of the garbage
   Add comments
   Find a better way to display the blobs
-  Make the Blob God object less godly
   Have blobs fire projectiles instead of lasers
   Some level of user interactivity
   Add a HUD to help with above
@@ -22,19 +21,20 @@ from random import *
 from time import time,sleep
 
 # Global variables
-screenHeight = 600
-screenWidth = 600
+screenHeight = 800
+screenWidth = 800
 drag = 0.008
-mutationMult = 1 # Changes the magnitude of mutations. Don't set this too high!
-randomStartMult = 0.2
+mutationMult = 2 # Changes the magnitude of mutations. Don't set this too high!
+randomStartMult = 0
 wallElasticity = 1.8
 plantCooldown = 200
-plantInterval = 18
-plantFood = 300
-meatFood = 600
+plantInterval = 16
+plantFood = 400
+meatFood = 800
 meatFoodDroppedMult = 0.6
+wrongFoodMult = 0.7
 frame = 0
-aggroFalseBuff = 1.5
+aggroFalseBuff = 1.45
 aggroTrueBuff = 1.2
 reproThreshold = 5000
 immunityTime = 500
@@ -42,6 +42,9 @@ accMult = 0.6
 speedMult = 0.8
 speedLimitMod = 50
 sizeHealthBuff = 2
+metabolismBase = 0.6
+metabolismModMult = 0.2
+blobNum = 0
 
 blobs = []
 plants = []
@@ -65,7 +68,7 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
             a = not a
         return [speed+uniform(-0.0015*mm,0.0015*mm),a,aggRange+\
         uniform(-3*mm,3*mm),size+uniform(-0.03*mm,0.03*mm),\
-        attack+uniform(-4.5*mm,4.5*mm),attackRange+uniform(-3*mm,\
+        attack+uniform(-0.6*mm,0.6*mm),attackRange+uniform(-3*mm,\
         3*mm),mHealth+uniform(-6*mm,6*mm),c]
     else:
         a = aggro
@@ -74,7 +77,7 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
             a = not a
         return [speed+uniform(-0.0005*mm,0.0005*mm),a,aggRange+\
         uniform(-1*mm,1*mm),size+uniform(-0.01*mm,0.01*mm),\
-        attack+uniform(-1.5*mm,1.5*mm),attackRange+uniform(-1*mm,\
+        attack+uniform(-0.2*mm,0.2*mm),attackRange+uniform(-1*mm,\
         1*mm),mHealth+uniform(-2*mm,2*mm),c]
 
 def reproduce(pos,vel,speed,aggro,aggRange,size,attack,attackRange,mHealth,\
@@ -84,6 +87,7 @@ def reproduce(pos,vel,speed,aggro,aggRange,size,attack,attackRange,mHealth,\
         newBlob = Blob([pos[0]+r,pos[1]+r],[vel[0]*-2,vel[1]*-2],\
         m[0],m[1],m[2],m[3],m[4],m[5],m[6],reproThreshold/2,m[7])
         blobs.append(newBlob)
+        print(newBlob)
 
 class SubSprite:
     def __init__(self, pos, offset, image, fill="#FFFFFF", outline="#000000",\
@@ -185,7 +189,8 @@ class Blob:
         self.effMH = mHealth*(size**sizeHealthBuff)
         self.food = food # The amount of food that the blob has. Death
         # happens at 0.
-        self.metabolism = (0.2+self.speed*80+self.mHealth/80)*0.7
+        self.metabolism = metabolismBase+\
+        (self.speed*60+self.mHealth/80)*metabolismModMult
         if not self.aggro:
             self.metabolism *= 0.8
         self.alive = True # If false, the blob will be removed from
@@ -221,6 +226,18 @@ class Blob:
         self.sprite.addSubsprite([-self.reproThreshold/400,-8*self.size],\
         Rectangle(Point(0,0),Point(0,0)),"#00eeee","#00eeee","Rectangle",\
         [(-reproThreshold+self.food*2)/400,-9*self.size])
+
+    def __repr__(self):
+        return "Blob #{}\n------------------------\n\
+Aggro: {}\n\
+Speed: {}\n\
+Size: {}\n\
+Max Health: {}\n\
+Attack Damage: {}\n\
+Attack Range: {}\n\
+Aggro Range: {}\n".format(blobNum,self.aggro,round(self.effSpd,6),\
+round(self.size,4),round(self.effMH,2),round(self.effAtt,2),\
+round(self.effAttR,2),round(self.effAggR,2))
 
     def findDistance(self,fpos,ident,target=None,targetAge=None):
         dist = sqrt((self.pos[0]-fpos[0])**2+(self.pos[1]-fpos[1])**2)
@@ -371,6 +388,8 @@ for i in range(15):
     uniform(50-10*rm,50+10*rm),1,uniform(5-1*rm,5+1*rm),\
     uniform(40-5*rm,40+5*rm),uniform(50-10*rm,50+10*rm),reproThreshold/2,\
     [uniform(0,255),uniform(0,255),uniform(0,255)]))
+    print(blobs[i])
+    blobNum += 1
 
 for i in range(30):
     plants.append(Plant([uniform(10,screenWidth-10),\
@@ -398,14 +417,20 @@ while True:
         for j in range(len(plants)-1, -1, -1):
             if blobs[i].findDistance(plants[j].pos, "Food") < 10:
                 plants[j].alive = False
-                blobs[i].food += plantFood
+                if blobs[i].aggro == False:
+                    blobs[i].food += plantFood
+                else:
+                    blobs[i].food += plantFood*wrongFoodMult
                 blobs[i].justAte = True
                 blobs[i].health += blobs[i].effMH/16
         for j in range(len(meat)-1, -1, -1):
             if blobs[i].findDistance(meat[j].pos, "Food") < 10:
                 meat[j].alive = False
                 blobs[i].justAte = True
-                blobs[i].food += meat[j].food
+                if blobs[i].aggro == True:
+                    blobs[i].food += meat[j].food
+                else:
+                    blobs[i].food += meat[j].food*wrongFoodMult
                 blobs[i].health += blobs[i].effMH
         blobs[i].AI()
         if blobs[i].distToClosestBlob < blobs[i].effAttR and\
@@ -428,6 +453,7 @@ while True:
             reproduce(blobs[i].pos,blobs[i].vel,blobs[i].speed,blobs[i].aggro\
             ,blobs[i].aggRange,blobs[i].size,blobs[i].attack,\
             blobs[i].attackRange,blobs[i].mHealth,blobs[i].color)
+            blobNum += 1
     for i in range(len(plants)-1, -1, -1):
         if not plants[i].alive:
             plants[i].c.undraw()
