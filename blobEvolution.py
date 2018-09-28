@@ -29,7 +29,7 @@ screenWidth = 800
 # Velocity of all blobs is multiplied by (1 - this amount).
 drag = 0.008
 # Changes the magnitude of mutations. Don't set this too high!
-mutationMult = 2
+mutationMult = 1.5
 # How different the blobs are from each other at the start.
 randomStartMult = 0
 # How bouncy the edges of the screen are.
@@ -41,17 +41,17 @@ plantInterval = 16
 # The amount of food a plant gives when eaten.
 plantFood = 400
 # The base amount of food that meat gives when eaten.
-meatFood = 600
+meatFood = 1500
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
-meatFoodDroppedMult = 0.7
+meatFoodDroppedMult = 0.75
 # How much food a blobs gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 0.6
+wrongFoodMult = 1
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
-aggroFalseBuff = 1.25
+aggroFalseBuff = 1
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
-aggroTrueBuff = 1.2
+aggroTrueBuff = 1
 # The amount of food a blob needs to reproduce.
 reproThreshold = 5000
 # The amount of time blobs have to run away from their parents after they are born.
@@ -65,9 +65,9 @@ speedLimitMod = 50
 # Affects the amount of damage and health a blob gets from having a high size.
 sizeHealthBuff = 2
 # How much of a blobs' food ticks away every frame.
-metabolismBase = 1
+metabolismBase = 1.2
 # Affects the increased food costs for having high health or speed.
-metabolismModMult = 0.2
+metabolismModMult = 0
 # Only used for printing the blob number in the console.
 blobNum = 0
 # Keeps track if F was pressed last. If true, all blobs vanish, speeding up the sim.
