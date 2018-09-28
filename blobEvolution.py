@@ -21,30 +21,57 @@ from random import *
 from time import time,sleep
 
 # Global variables
+
+# Height of the window.
 screenHeight = 800
+# Width of the window.
 screenWidth = 800
+# Velocity of all blobs is multiplied by (1 - this amount).
 drag = 0.008
-mutationMult = 2 # Changes the magnitude of mutations. Don't set this too high!
+# Changes the magnitude of mutations. Don't set this too high!
+mutationMult = 2
+# How different the blobs are from each other at the start.
 randomStartMult = 0
+# How bouncy the edges of the screen are.
 wallElasticity = 1.8
+# Initial time before plants can generate.
 plantCooldown = 200
+# Time, in frames, between when each plant spawns.
 plantInterval = 16
+# The amount of food a plant gives when eaten.
 plantFood = 400
-meatFood = 800
-meatFoodDroppedMult = 0.6
-wrongFoodMult = 0.7
+# The base amount of food that meat gives when eaten.
+meatFood = 600
+# The percentage of food that a dead blob drops when it dies. (Not actual percent)
+meatFoodDroppedMult = 0.7
+# How much food a blobs gets from eating the wrong kind of food for its diet.
+wrongFoodMult = 0.6
+# Used in FPS calculations.
 frame = 0
-aggroFalseBuff = 1.45
+# Prey blobs' speed is multiplied by this amount.
+aggroFalseBuff = 1.25
+# Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
 aggroTrueBuff = 1.2
+# The amount of food a blob needs to reproduce.
 reproThreshold = 5000
+# The amount of time blobs have to run away from their parents after they are born.
 immunityTime = 500
+# How powerful acceleration is.
 accMult = 0.6
+# How fast blobs are in the start.
 speedMult = 0.8
+# Affects the top speed of blobs.
 speedLimitMod = 50
+# Affects the amount of damage and health a blob gets from having a high size.
 sizeHealthBuff = 2
-metabolismBase = 0.6
+# How much of a blobs' food ticks away every frame.
+metabolismBase = 1
+# Affects the increased food costs for having high health or speed.
 metabolismModMult = 0.2
+# Only used for printing the blob number in the console.
 blobNum = 0
+# Keeps track if F was pressed last. If true, all blobs vanish, speeding up the sim.
+fast = False
 
 blobs = []
 plants = []
@@ -351,7 +378,6 @@ round(self.effAttR,2),round(self.effAggR,2))
         self.fear -= 1
         if self.reproTime > 0:
             self.reproTime -= 1
-        self.draw()
 
 class Plant:
     def __init__(self,pos):
@@ -406,6 +432,10 @@ after = 0
 
 while True:
     before2 = time()
+    if win.lastKey == "f":
+        fast = True
+    else:
+        fast = False
     if plantCooldown <= 0:
         plants.append(Plant([uniform(10,screenWidth-10),\
         uniform(10,screenHeight-10)]))
@@ -440,6 +470,10 @@ while True:
             blobs[blobs[i].target].health -= blobs[i].effAtt*\
             (blobs[i].size**sizeHealthBuff)
         blobs[i].update()
+        if not fast:
+            blobs[i].draw()
+        else:
+            blobs[i].sprite.undraw()
         if not blobs[i].alive:
             blobs[i].sprite.undraw()
             meat.append(Meat(blobs[i].pos,blobs[i].food*meatFoodDroppedMult\
