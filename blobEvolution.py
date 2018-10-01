@@ -27,7 +27,7 @@ screenHeight = 600
 # Width of the window.
 screenWidth = 600
 # Velocity of all blobs is multiplied by (1 - this amount) every frame.
-drag = 0.005
+drag = 0.007
 # Changes the magnitude of mutations. Don't set this too high!
 mutationMult = 1
 # How different the blobs are from each other at the start.
@@ -37,21 +37,21 @@ wallElasticity = 1.8
 # Initial time before plants can generate.
 plantCooldown = 200
 # Time, in frames, between when each plant spawns.
-plantInterval = 40
+plantInterval = 30
 # The amount of food a plant gives when eaten.
-plantFood = 400
+plantFood = 350
 # The base amount of food that meat gives when eaten.
 meatFood = 1000
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
-meatFoodDroppedMult = 0.7
+meatFoodDroppedMult = 0.55
 # How much food a blob gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 1
+wrongFoodMult = 0.8
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
-aggroFalseBuff = 1
+aggroFalseBuff = 1.1
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
-aggroTrueBuff = 1.2
+aggroTrueBuff = 1.325
 # The amount of food a blob needs to reproduce.
 reproThreshold = 5000
 # The amount of time blobs have to run away from their parents after they are born.
@@ -59,13 +59,13 @@ immunityTime = 500
 # How powerful acceleration is.
 accMult = 0.7
 # How fast blobs are in the start.
-speedMult = 0.8
+speedMult = 0.7
 # Affects the top speed of blobs.
-speedLimitMod = 60
+speedLimitMod = 50
 # Affects the amount of damage and health a blob gets from having a high size.
 sizeHealthBuff = 1.4
 # How much of a blobs' food ticks away every frame.
-metabolismBase = 1.4
+metabolismBase = 1
 # Affects the increased food costs for having high health or speed.
 metabolismModMult = 0
 # Only used for printing the blob number in the console.
@@ -90,8 +90,8 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
     min(max(color[2]+uniform(-30,30),0),255)]
     if r == 6:
         a = aggro
-        rr = randint(0,8)
-        if rr == 8:
+        rr = randint(0,5)
+        if rr == 5:
             a = not a
         return [speed+uniform(-0.0015*mm,0.0015*mm),a,aggRange+\
         uniform(-3*mm,3*mm),size,\
@@ -99,8 +99,8 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
         3*mm),mHealth+uniform(-6*mm,6*mm),c]
     else:
         a = aggro
-        rr = randint(0,26)
-        if rr == 26:
+        rr = randint(0,17)
+        if rr == 17:
             a = not a
         return [speed+uniform(-0.0005*mm,0.0005*mm),a,aggRange+\
         uniform(-1*mm,1*mm),size,\
@@ -230,7 +230,10 @@ class Blob:
         self.justAte = False
         self.fearRandPos = [0,0]
         # Every statement after this deals with the graphics only.
-        self.color = color
+        if self.aggro:
+            self.color = [180,80,80]
+        else:
+            self.color = [80,180,180]
         self.sprite = Sprite(self.pos)
         self.sprite.addSubsprite([0,0],Circle(Point(self.pos[0],self.pos[1])\
         ,5*self.size),color_rgb(round(self.color[0]),round(self.color[1]),\
@@ -369,7 +372,7 @@ round(self.effAttR,2),round(self.effAggR,2))
         self.vel[1] = min(max(self.vel[1],-self.effSpd*speedLimitMod),\
         self.speed*speedLimitMod)
         if self.attackCooldown > 0:
-            self.attackCooldown -= 2*(self.speed/100*speedMult)
+            self.attackCooldown -= 2
         if self.food < 1 or self.health < 1:
             self.alive = False
         if self.health > self.effMH:
@@ -403,7 +406,7 @@ class Meat:
         if self.food <= 0:
             self.alive = False
 
-for i in range(4):
+for i in range(10):
     a = False
     r = randint(0,2)
     rm = randomStartMult
