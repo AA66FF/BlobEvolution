@@ -23,9 +23,9 @@ from time import time,sleep
 # Global variables
 
 # Height of the window.
-screenHeight = 600
+screenHeight = 900
 # Width of the window.
-screenWidth = 600
+screenWidth = 1500
 # Velocity of all blobs is multiplied by (1 - this amount) every frame.
 drag = 0.007
 # Changes the magnitude of mutations. Don't set this too high!
@@ -49,7 +49,7 @@ wrongFoodMult = 0.8
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
-aggroFalseBuff = 1.1
+aggroFalseBuff = 1.175
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
 aggroTrueBuff = 1.325
 # The amount of food a blob needs to reproduce.
@@ -59,7 +59,7 @@ immunityTime = 500
 # How powerful acceleration is.
 accMult = 0.7
 # How fast blobs are in the start.
-speedMult = 0.7
+speedMult = 0.8
 # Affects the top speed of blobs.
 speedLimitMod = 50
 # Affects the amount of damage and health a blob gets from having a high size.
@@ -93,7 +93,7 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
         rr = randint(0,5)
         if rr == 5:
             a = not a
-        return [speed+uniform(-0.0015*mm,0.0015*mm),a,aggRange+\
+        return [speed+uniform(-0.0006*mm,0.0006*mm),a,aggRange+\
         uniform(-3*mm,3*mm),size,\
         attack+uniform(-0.6*mm,0.6*mm),attackRange+uniform(-3*mm,\
         3*mm),mHealth+uniform(-6*mm,6*mm),c]
@@ -102,7 +102,7 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
         rr = randint(0,17)
         if rr == 17:
             a = not a
-        return [speed+uniform(-0.0005*mm,0.0005*mm),a,aggRange+\
+        return [speed+uniform(-0.0002*mm,0.0002*mm),a,aggRange+\
         uniform(-1*mm,1*mm),size,\
         attack+uniform(-0.2*mm,0.2*mm),attackRange+uniform(-1*mm,\
         1*mm),mHealth+uniform(-2*mm,2*mm),c]
@@ -420,14 +420,9 @@ for i in range(10):
     print(blobs[i])
     blobNum += 1
 
-for i in range(5):
+for i in range(50):
     plants.append(Plant([uniform(10,screenWidth-10),\
     uniform(10,screenHeight-10)]))
-
-for i in range(0):
-    meat.append(Meat([uniform(10,screenWidth-10),uniform(10,screenHeight-10)],\
-    uniform(1500,2500)))
-
 
 before = time()
 before2 = 0
