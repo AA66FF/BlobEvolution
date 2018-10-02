@@ -368,9 +368,9 @@ round(self.effAttR,2),round(self.effAggR,2))
             self.vel[1] *= -wallElasticity
             self.pos[1] -= 1
         self.vel[0] = min(max(self.vel[0],-self.effSpd*speedLimitMod),\
-        self.speed*speedLimitMod)
+        self.effSpd*speedLimitMod)
         self.vel[1] = min(max(self.vel[1],-self.effSpd*speedLimitMod),\
-        self.speed*speedLimitMod)
+        self.effSpd*speedLimitMod)
         if self.attackCooldown > 0:
             self.attackCooldown -= 2
         if self.food < 1 or self.health < 1:
