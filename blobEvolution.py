@@ -39,19 +39,19 @@ plantCooldown = 200
 # Time, in frames, between when each plant spawns.
 plantInterval = 30
 # The amount of food a plant gives when eaten.
-plantFood = 350
+plantFood = 450
 # The base amount of food that meat gives when eaten.
-meatFood = 1000
+meatFood = 1200
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
 meatFoodDroppedMult = 0.55
 # How much food a blob gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 0.8
+wrongFoodMult = 0.5
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
-aggroFalseBuff = 1.175
+aggroFalseBuff = 1.2
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
-aggroTrueBuff = 1.325
+aggroTrueBuff = 1.3
 # The amount of food a blob needs to reproduce.
 reproThreshold = 5000
 # The amount of time blobs have to run away from their parents after they are born.
@@ -203,12 +203,8 @@ class Blob:
         # attack other blobs from.
         self.effAttR = attackRange
         self.effAtt = attack
-        if self.aggro:
-            self.effAggR *= aggroTrueBuff + 0.2
-            self.effAttR *= aggroTrueBuff
-            self.effAtt *= aggroTrueBuff
         if not self.aggro:
-            self.effSpd *= aggroFalseBuff
+            self.effAtt *= 0.5
         self.effSpd /= self.size
         self.attackCooldown = 100 # If 0, the blob can attack.
         self.mHealth = mHealth # Maximum health of the blob.
@@ -402,20 +398,31 @@ class Meat:
         self.c.draw(win)
 
     def update(self):
-        self.food -= 1
+        self.food -= 0.5
         if self.food <= 0:
             self.alive = False
 
 for i in range(10):
-    a = False
+    aggro = False
     r = randint(0,2)
     rm = randomStartMult
     if r == 2:
-        a = True
+        aggro = True
+    if not aggro:
+        speed = uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult*aggroFalseBuff
+        aggRange = uniform(50-10*rm,50+10*rm)
+        attack = uniform(5-1*rm,5+1*rm)
+        attackRange = uniform(40-5*rm,40+5*rm)
+        mHealth = uniform(50-10*rm,50+10*rm)
+    else:
+        speed = uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult
+        aggRange = uniform(50-10*rm,50+10*rm)*(aggroTrueBuff+0.2)
+        attack = uniform(5-1*rm,5+1*rm)*aggroTrueBuff
+        attackRange = uniform(40-5*rm,40+5*rm)*aggroTrueBuff
+        mHealth = uniform(50-10*rm,50+10*rm)
     blobs.append(Blob([uniform(10,screenWidth-10),uniform(10,\
-    screenHeight-10)],[0,0],uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult,a,\
-    uniform(50-10*rm,50+10*rm),1,uniform(5-1*rm,5+1*rm),\
-    uniform(40-5*rm,40+5*rm),uniform(50-10*rm,50+10*rm),reproThreshold/2,\
+    screenHeight-10)],[0,0],speed,aggro,aggRange,1,attack,\
+    attackRange,mHealth,reproThreshold/2,\
     [uniform(0,255),uniform(0,255),uniform(0,255)]))
     print(blobs[i])
     blobNum += 1
