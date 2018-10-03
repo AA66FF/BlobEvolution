@@ -39,21 +39,21 @@ plantCooldown = 200
 # Time, in frames, between when each plant spawns.
 plantInterval = 30
 # The amount of food a plant gives when eaten.
-plantFood = 450
+plantFood = 500
 # The base amount of food that meat gives when eaten.
 meatFood = 1200
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
 meatFoodDroppedMult = 0.55
 # How much food a blob gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 0.5
+wrongFoodMult = 0.6
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
 aggroFalseBuff = 1.2
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
-aggroTrueBuff = 1.3
+aggroTrueBuff = 1.325
 # The amount of food a blob needs to reproduce.
-reproThreshold = 5000
+reproThreshold = 10000
 # The amount of time blobs have to run away from their parents after they are born.
 immunityTime = 500
 # How powerful acceleration is.
