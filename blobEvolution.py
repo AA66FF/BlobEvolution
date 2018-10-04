@@ -4,9 +4,7 @@ I should probably comment this code more.
 It's badly organized and even more badly optimized. I'm working on that.
 
 Todo:
-  Clean up more of the garbage
-  Add comments
-  Find a better way to display the blobs
+  Improve blob AI: Desire system
   Have blobs fire projectiles instead of lasers
   Some level of user interactivity
   Add a HUD to help with above
@@ -117,6 +115,8 @@ def reproduce(pos,vel,speed,aggro,aggRange,size,attack,attackRange,mHealth,\
         print(newBlob)
 
 class SubSprite:
+    # Part of Sprites. Shapes are drawn here.
+
     def __init__(self, pos, offset, image, fill="#FFFFFF", outline="#000000",\
     shape="Circle", dest=None):
         self.pos = pos
@@ -153,6 +153,8 @@ class SubSprite:
         self.draw()
 
 class Sprite:
+    # Combines all SubSprites into one single Sprite.
+
     def __init__(self, pos):
         self.pos = pos
         self.subSprites = []
@@ -177,47 +179,60 @@ class Sprite:
             self.subSprites[i].pos = self.pos
             self.subSprites[i].redraw()
 
-# The main component of the simulation
 class Blob:
+# The main component of the simulation
 
     def __init__(self, pos, vel, speed, aggro, aggRange, size, attack, \
     attackRange, mHealth, food, color):
-        self.pos = pos # Position vector. (must be list)
-        self.vel = vel # Velocity vector. (must be list)
-        self.acc = [0,0] # Acceleration vector.
-        self.speed = speed # How fast the blob can accelerate.
+        # Position vector. (must be list)
+        self.pos = pos
+        # Velocity vector. (must be list)
+        self.vel = vel
+        # Acceleration vector.
+        self.acc = [0,0]
+        # How fast the blob can accelerate. Also affects their speed limit.
+        self.speed = speed
         self.effSpd = speed
-        self.aggro = aggro # Whether the blob will move towards
-        # other blobs or run away from them. (boolean)
-        self.fear = 0 # If above 0, blob will run away.
-        self.aggRange = aggRange # The range of aggro's effect
+        # Whether or not the blob will chase other blobs. (boolean)
+        self.aggro = aggro
+        # If above 0, blob will run away from the nearest blob.
+        self.fear = 0
+        # The range of aggro's effect.
+        self.aggRange = aggRange
         self.effAggR = aggRange
-        self.size = size # The size of the blob. Increases attack power,
-        # decreases speed.
-        self.reproThreshold = reproThreshold # The amount of food the blob
-        # needs before it decides to reproduce.
+        # The size of the blob. Currently, is always set to 1.
+        self.size = size
+        # Amount of food that the blob needs to reproduce.
+        self.reproThreshold = reproThreshold
         self.reproTime = 0
-        self.age = 0 # Number of frames that the blob has been alive.
-        self.attack = attack # The amount of damage the blob does.
-        self.attackRange = attackRange # The distance that the blob can
-        # attack other blobs from.
+        # Number of frames that the blob has been alive.
+        self.age = 0
+        # The amount of damage the blob does.
+        self.attack = attack
+        # The distance that the blob can attack other blobs from.
+        self.attackRange = attackRange
         self.effAttR = attackRange
         self.effAtt = attack
         if not self.aggro:
             self.effAtt *= 0.5
         self.effSpd /= self.size
-        self.attackCooldown = 100 # If 0, the blob can attack.
-        self.mHealth = mHealth # Maximum health of the blob.
-        self.health = mHealth # Health of the blob. Death happens at 0.
+        # If 0, the blob can attack.
+        self.attackCooldown = 100
+        # Maximum health of the blob.
+        self.mHealth = mHealth
         self.effMH = mHealth*(size**sizeHealthBuff)
-        self.food = food # The amount of food that the blob has. Death
-        # happens at 0.
+        # Health of the blob. Death happens at 0.
+        self.health = self.effMH
+        # The amount of food that the blob has. Death happens at 0.
+        self.food = food
+        # The amount of food that ticks away every frame.
         self.metabolism = metabolismBase+\
         (self.speed*60+self.mHealth/80)*metabolismModMult
         if not self.aggro:
             self.metabolism *= 0.5
-        self.alive = True # If false, the blob will be removed from
-        # the blobs list.
+        # If false, blob is deleted from existence.
+        self.alive = True
+        # These values deal with the AI of the blob.
         self.distToClosestBlob = 1000
         self.targetBlobPos = [0,0]
         self.distToClosestFood = 1000
@@ -225,7 +240,7 @@ class Blob:
         self.lookingAround = False
         self.justAte = False
         self.fearRandPos = [0,0]
-        # Every statement after this deals with the graphics only.
+        # These values deal with the graphics.
         if self.aggro:
             self.color = [180,80,80]
         else:
@@ -266,6 +281,7 @@ round(self.size,4),round(self.effMH,2),round(self.effAtt,2),\
 round(self.effAttR,2),round(self.effAggR,2))
 
     def findDistance(self,fpos,ident,target=None,targetAge=None):
+        # Will be replaced soon with the Desire system.
         dist = sqrt((self.pos[0]-fpos[0])**2+(self.pos[1]-fpos[1])**2)
         if ident == "Blob" and dist < self.distToClosestBlob:
             self.distToClosestBlob = dist
@@ -278,6 +294,8 @@ round(self.effAttR,2),round(self.effAggR,2))
         return dist
 
     def findAccel(self,fpos):
+        # This function determines the direction of acceleration, and contructs
+        # a vector using trigonometry.
         deg = 0
         posDiff = [(self.pos[0]-fpos[0])*-1,(self.pos[1]-fpos[1])*-1]
         if posDiff[0] >= 0 and posDiff[1] < 0:
@@ -291,16 +309,20 @@ round(self.effAttR,2),round(self.effAggR,2))
         return [sin(deg)*self.effSpd,-cos(deg)*self.effSpd]
 
     def applyForce(self,force):
+        # Input force vector, blob moves in that direction.
         f = force
         self.acc[0] += f[0]/(self.size)*accMult
         self.acc[1] += f[1]/(self.size)*accMult
 
     def applyNegForce(self,force):
+        # Input force vector, blob moves in the opposite direction.
         f = force
         self.acc[0] -= f[0]/(self.size)*accMult
         self.acc[1] -= f[1]/(self.size)*accMult
 
     def AI(self):
+        # Deals with most of the blob's decision making. Soon to be updated with
+        # the Desire system.
         fa = self.findAccel(self.targetBlobPos)
         if self.justAte or self.age % 10 == 0:
             self.lookingAround = True
@@ -324,6 +346,7 @@ round(self.effAttR,2),round(self.effAggR,2))
             self.applyForce(self.findAccel(self.targetFoodPos))
 
     def draw(self):
+        # Draws the blob's sprite on screen.
         subsprites = self.sprite.subSprites
         subsprites[1].dest = [self.attackTarget[0],\
         self.attackTarget[1]+4]
@@ -340,6 +363,8 @@ round(self.effAttR,2),round(self.effAggR,2))
             subsprites[1].undraw()
 
     def update(self):
+        # Responsible for making sure all the movement vectors are in the
+        # correct range.
         self.vel[0] *= 1-drag
         self.vel[1] *= 1-drag
         self.pos[0] += self.vel[0]
@@ -379,6 +404,7 @@ round(self.effAttR,2),round(self.effAggR,2))
             self.reproTime -= 1
 
 class Plant:
+    # Very simple object. Blobs eat these.
     def __init__(self,pos):
         self.pos = pos
         self.alive = True
@@ -388,6 +414,7 @@ class Plant:
         self.c.draw(win)
 
 class Meat:
+    # Simple object. When blobs die, they drop these.
     def __init__(self,pos,food):
         self.pos = pos
         self.food = food
@@ -403,11 +430,14 @@ class Meat:
             self.alive = False
 
 for i in range(10):
+    # Generate all blobs.
+    # Determine if this blob is predator or prey.
     aggro = False
     r = randint(0,2)
     rm = randomStartMult
     if r == 2:
         aggro = True
+    # Depending on their aggro value, set their stats accordingly.
     if not aggro:
         speed = uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult*aggroFalseBuff
         aggRange = uniform(50-10*rm,50+10*rm)
@@ -420,14 +450,17 @@ for i in range(10):
         attack = uniform(5-1*rm,5+1*rm)*aggroTrueBuff
         attackRange = uniform(40-5*rm,40+5*rm)*aggroTrueBuff
         mHealth = uniform(60-10*rm,60+10*rm)
+    # Add blob to blob list.
     blobs.append(Blob([uniform(10,screenWidth-10),uniform(10,\
     screenHeight-10)],[0,0],speed,aggro,aggRange,1,attack,\
     attackRange,mHealth,reproThreshold/2,\
     [uniform(0,255),uniform(0,255),uniform(0,255)]))
     print(blobs[i])
+    # Increment blobNum for the console.
     blobNum += 1
 
 for i in range(50):
+    # Generate 50 plants for the blobs to eat in the start.
     plants.append(Plant([uniform(10,screenWidth-10),\
     uniform(10,screenHeight-10)]))
 
@@ -436,20 +469,28 @@ before2 = 0
 after = 0
 
 while True:
-    before2 = time()
+    # Main loop. Goes on forever.
+
+    # Responsible for the fast functionality; press f to make the blobs
+    # disappear.
     if win.lastKey == "f":
         fast = True
     else:
         fast = False
+    # Generates plants every plant interval.
     if plantCooldown <= 0:
         plants.append(Plant([uniform(10,screenWidth-10),\
         uniform(10,screenHeight-10)]))
         plantCooldown = plantInterval
+    # The blob loop.
     for i in range(len(blobs)-1, -1, -1):
+        # This loop determines distance to all other blobs.
         for j in range(len(blobs)):
             if i != j and blobs[i].lookingAround:
                 blobs[i].findDistance(blobs[j].pos, "Blob", j, blobs[j].age)
+        # This loop determines distance to all plants.
         for j in range(len(plants)-1, -1, -1):
+            # If they are close enough, eat the plant.
             if blobs[i].findDistance(plants[j].pos, "Food") < 10:
                 plants[j].alive = False
                 if blobs[i].aggro == False:
@@ -458,7 +499,9 @@ while True:
                     blobs[i].food += plantFood*wrongFoodMult
                 blobs[i].justAte = True
                 blobs[i].health += blobs[i].effMH/6
+        # This loop determines distance to all meat.
         for j in range(len(meat)-1, -1, -1):
+            # If they are close enough, eat the meat.
             if blobs[i].findDistance(meat[j].pos, "Food") < 10:
                 meat[j].alive = False
                 blobs[i].justAte = True
@@ -467,36 +510,48 @@ while True:
                 else:
                     blobs[i].food += meat[j].food*wrongFoodMult
                 blobs[i].health += blobs[i].effMH
+        # Make the blobs react to the distance data collected.
         blobs[i].AI()
+        # Attack sequence. If the blob can attack, it will attack the nearest
+        # blob to it.
         if blobs[i].distToClosestBlob < blobs[i].effAttR and\
         blobs[i].attackCooldown <= 0 and blobs[i].age > immunityTime and\
         blobs[blobs[i].target].age > immunityTime:
             blobs[i].attackCooldown = 150
             blobs[blobs[i].target].health -= blobs[i].effAtt*\
             (blobs[i].size**sizeHealthBuff)
+        # Update blob position, velocity, acceleration, AI values, etc.
         blobs[i].update()
+        # If fast mode is active, do not draw any blobs.
         if not fast:
             blobs[i].draw()
         else:
             blobs[i].sprite.undraw()
+        # If the blob is dead, delete it and place a meat object at its position.
         if not blobs[i].alive:
             blobs[i].sprite.undraw()
             meat.append(Meat(blobs[i].pos,blobs[i].food*meatFoodDroppedMult\
             +meatFood))
             del blobs[i]
+    # Reproduction loop. Separate from blob loop.
     for i in range(len(blobs)):
+        # If the blob's food level is higher than their
+        # food capacity/repro threshold, they start the reproduction sequence.
         if blobs[i].food > blobs[i].reproThreshold:
             blobs[i].reproTime += 200
             blobs[i].food -= reproThreshold/2
         if blobs[i].reproTime % 200 == 1:
+            # This reproduce() should probably be built into the blob object.
             reproduce(blobs[i].pos,blobs[i].vel,blobs[i].speed,blobs[i].aggro\
             ,blobs[i].aggRange,blobs[i].size,blobs[i].attack,\
             blobs[i].attackRange,blobs[i].mHealth,blobs[i].color)
             blobNum += 1
+    # Plant loop, only responsible for deleting plants.
     for i in range(len(plants)-1, -1, -1):
         if not plants[i].alive:
             plants[i].c.undraw()
             del plants[i]
+    # Meat loop, only responsible for deleting meat.
     if len(meat) > 0:
         for i in range(len(meat)-1, -1, -1):
             meat[i].update()
@@ -506,6 +561,7 @@ while True:
     plantCooldown -= 1
     frame += 1
     after = time()
+    # Drawing for the FPS counter in upper right corner.
     if time()-before >= 1:
         t.undraw()
         t = Text(Point(screenWidth-50,20),"{} FPS".format(frame))
