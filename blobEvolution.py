@@ -57,7 +57,7 @@ immunityTime = 500
 # How powerful acceleration is.
 accMult = 0.7
 # How fast blobs are in the start.
-speedMult = 0.8
+speedMult = 0.6
 # Affects the top speed of blobs.
 speedLimitMod = 50
 # Affects the amount of damage and health a blob gets from having a high size.
@@ -79,6 +79,39 @@ win = GraphWin("Blob Evolution", screenWidth, screenHeight)
 win.setBackground(color_rgb(160,230,230))
 win.autoflush = False
 t = Text(Point(screenWidth-50,20),frame)
+
+def sub(v1,v2):
+    return [v1[0]-v2[0],v1[1]-v2[1]]
+
+def mult(v1,mult):
+    return [v1[0]*mult,v1[1]*mult]
+
+def dist(v1,v2):
+    return sqrt((v1[0]-v2[0])**2+(v1[1]-v2[1])**2)
+
+def normalize(vector):
+    deg = 0
+    if vector[0] >= 0 and vector[1] < 0:
+        deg = atan(vector[0]/-vector[1])
+    if vector[0] > 0 and vector[1] >= 0:
+        deg = atan(-vector[1]/-vector[0])+radians(90)
+    if vector[0] <= 0 and vector[1] > 0:
+        deg = atan(vector[0]/-vector[1])+radians(180)
+    if vector[0] < 0 and vector[1] <= 0:
+        deg = atan(-vector[1]/-vector[0])+radians(270)
+    return [sin(deg),-cos(deg)]
+
+def angle(vector):
+    deg = 0
+    if vector[0] >= 0 and vector[1] < 0:
+        deg = atan(vector[0]/-vector[1])
+    if vector[0] > 0 and vector[1] >= 0:
+        deg = atan(-vector[1]/-vector[0])+radians(90)
+    if vector[0] <= 0 and vectorf[1] > 0:
+        deg = atan(vector[0]/-vector[1])+radians(180)
+    if vector[0] < 0 and vector[1] <= 0:
+        deg = atan(-vector[1]/-vector[0])+radians(270)
+    return deg
 
 def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
     r = randint(0,6)
@@ -179,6 +212,16 @@ class Sprite:
             self.subSprites[i].pos = self.pos
             self.subSprites[i].redraw()
 
+class Desire:
+    # Blobs use these for desire calculations
+    def __init__(self, ident, desire):
+        self.ident = ident
+        self.pos = self.ident.pos
+        self.desire = desire
+
+    def __repr__(self):
+        return "{}".format(self.desire)
+
 class Blob:
 # The main component of the simulation
 
@@ -233,13 +276,11 @@ class Blob:
         # If false, blob is deleted from existence.
         self.alive = True
         # These values deal with the AI of the blob.
-        self.distToClosestBlob = 1000
-        self.targetBlobPos = [0,0]
-        self.distToClosestFood = 1000
-        self.targetFoodPos = [0,0]
+        self.desires = []
         self.lookingAround = False
         self.justAte = False
-        self.fearRandPos = [0,0]
+        self.target = 0
+        self.targetPos = [0,0]
         # These values deal with the graphics.
         if self.aggro:
             self.color = [180,80,80]
@@ -251,7 +292,6 @@ class Blob:
         round(self.color[2])),color_rgb(round((self.color[0])/2),round((self.\
         color[1])/2),round((self.color[2])/2)),"Circle",None)
         self.attackTarget = [0,0]
-        self.target = 0
         self.sprite.addSubsprite([0,-4],Line(Point(self.pos[0],\
         self.pos[1]),Point(self.attackTarget[0],self.attackTarget[1]+4)),\
         "#440000","#440000","Line",self.attackTarget)
@@ -293,6 +333,26 @@ round(self.effAttR,2),round(self.effAggR,2))
             self.targetFoodPos = fpos
         return dist
 
+    def calcDesire(self,ident):
+        desire = 0
+        i = ident
+        fpos = i.pos
+        if self.aggro:
+            if type(i) == Blob:
+                desire += i.food/100
+            if type(i) == Meat:
+                desire += i.food/40
+            if type(i) == Plant:
+                desire += 10
+        else:
+            if type(i) == Plant:
+                desire += 50
+        if type(i) == Blob:
+            desire += (self.attack-i.attack)
+        dist = sqrt((self.pos[0]-fpos[0])**2+(self.pos[1]-fpos[1])**2)
+        desire *= (1/(dist/aggRange))
+        self.desires.append(Desire(ident,desire))
+
     def findAccel(self,fpos):
         # This function determines the direction of acceleration, and contructs
         # a vector using trigonometry.
@@ -321,29 +381,20 @@ round(self.effAttR,2),round(self.effAggR,2))
         self.acc[1] -= f[1]/(self.size)*accMult
 
     def AI(self):
-        # Deals with most of the blob's decision making. Soon to be updated with
-        # the Desire system.
-        fa = self.findAccel(self.targetBlobPos)
+        # Deals with most of the blob's decision making.
+        self.desires.sort(key=lambda x: x.desire, reverse=True)
         if self.justAte or self.age % 10 == 0:
             self.lookingAround = True
+        for i in range(len(self.desires)):
+            ipos = self.desires[i].ident.pos
+            if (dist(self.pos,ipos) < 5):
+                self.applyForce(mult(normalize(sub(self.pos,ipos)),3))
+        if self.desires[len(self.desires)-1].desire <= -5:
+            ipos = self.desires[len(self.desires)-1].ident.pos
+            self.applyForce(mult(normalize(sub(self.pos,ipos)),self.effSpd))
         else:
-            self.lookingAround = False
-        if self.distToClosestBlob <= 5:
-            self.applyNegForce([fa[0]*5,fa[1]*5])
-        if self.distToClosestBlob <= self.effAttR and\
-        self.targetAge > immunityTime:
-            self.attackTarget = self.targetBlobPos
-        if self.distToClosestBlob <= self.effAggR and\
-        self.targetAge > immunityTime:
-            if self.aggro and self.age > immunityTime:
-                self.applyForce(fa)
-            else:
-                self.fear = 150
-                self.applyNegForce(fa)
-        elif self.fear > 0:
-            self.applyNegForce(fa)
-        else:
-            self.applyForce(self.findAccel(self.targetFoodPos))
+            ipos = self.desires[0].ident.pos
+            self.applyForce(mult(normalize(sub(ipos,self.pos)),self.effSpd))
 
     def draw(self):
         # Draws the blob's sprite on screen.
@@ -373,6 +424,7 @@ round(self.effAttR,2),round(self.effAggR,2))
         self.vel[1] += self.acc[1]
         self.acc[0] *= 0
         self.acc[1] *= 0
+        self.desires = []
         self.food -= self.metabolism
         self.distToClosestBlob = 1000
         self.distToClosestFood = 1000
@@ -486,12 +538,13 @@ while True:
     for i in range(len(blobs)-1, -1, -1):
         # This loop determines distance to all other blobs.
         for j in range(len(blobs)):
-            if i != j and blobs[i].lookingAround:
-                blobs[i].findDistance(blobs[j].pos, "Blob", j, blobs[j].age)
+            if i != j:
+                blobs[i].calcDesire(blobs[j])
         # This loop determines distance to all plants.
         for j in range(len(plants)-1, -1, -1):
+            blobs[i].calcDesire(plants[j])
             # If they are close enough, eat the plant.
-            if blobs[i].findDistance(plants[j].pos, "Food") < 10:
+            if dist(blobs[i].pos,plants[j].pos) < 10:
                 plants[j].alive = False
                 if blobs[i].aggro == False:
                     blobs[i].food += plantFood
@@ -502,7 +555,7 @@ while True:
         # This loop determines distance to all meat.
         for j in range(len(meat)-1, -1, -1):
             # If they are close enough, eat the meat.
-            if blobs[i].findDistance(meat[j].pos, "Food") < 10:
+            if dist(blobs[i].pos,meat[j].pos) < 10:
                 meat[j].alive = False
                 blobs[i].justAte = True
                 if blobs[i].aggro == True:
@@ -514,7 +567,7 @@ while True:
         blobs[i].AI()
         # Attack sequence. If the blob can attack, it will attack the nearest
         # blob to it.
-        if blobs[i].distToClosestBlob < blobs[i].effAttR and\
+        if dist(blobs[i].pos,blobs[blobs[i].target].pos) < blobs[i].effAttR and\
         blobs[i].attackCooldown <= 0 and blobs[i].age > immunityTime and\
         blobs[blobs[i].target].age > immunityTime:
             blobs[i].attackCooldown = 150
