@@ -4,7 +4,6 @@ I should probably comment this code more.
 It's badly organized and even more badly optimized. I'm working on that.
 
 Todo:
-  Improve blob AI: Desire system
   Have blobs fire projectiles instead of lasers
   Some level of user interactivity
   Add a HUD to help with above
@@ -37,27 +36,27 @@ plantCooldown = 200
 # Time, in frames, between when each plant spawns.
 plantInterval = 30
 # The amount of food a plant gives when eaten.
-plantFood = 700
+plantFood = 650
 # The base amount of food that meat gives when eaten.
-meatFood = 1200
+meatFood = 3000
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
 meatFoodDroppedMult = 0.6
 # How much food a blob gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 0.5
+wrongFoodMult = 0.6
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
-aggroFalseBuff = 1.2
+aggroFalseBuff = 1.0
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
-aggroTrueBuff = 1.35
+aggroTrueBuff = 1.4
 # The amount of food a blob needs to reproduce.
 reproThreshold = 10000
 # The amount of time blobs have to run away from their parents after they are born.
-immunityTime = 500
+immunityTime = 1000
 # How powerful acceleration is.
 accMult = 0.7
 # How fast blobs are in the start.
-speedMult = 0.6
+speedMult = 0.9
 # Affects the top speed of blobs.
 speedLimitMod = 50
 # Affects the amount of damage and health a blob gets from having a high size.
@@ -79,6 +78,9 @@ win = GraphWin("Blob Evolution", screenWidth, screenHeight)
 win.setBackground(color_rgb(160,230,230))
 win.autoflush = False
 t = Text(Point(screenWidth-50,20),frame)
+
+def add(v1,v2):
+    return [v1[0]+v2[0],v1[1]-v2[1]]
 
 def sub(v1,v2):
     return [v1[0]-v2[0],v1[1]-v2[1]]
@@ -227,6 +229,7 @@ class Blob:
 
     def __init__(self, pos, vel, speed, aggro, aggRange, size, attack, \
     attackRange, mHealth, food, color):
+        self.index = 0
         # Position vector. (must be list)
         self.pos = pos
         # Velocity vector. (must be list)
@@ -320,19 +323,6 @@ Aggro Range: {}\n".format(blobNum,self.aggro,round(self.effSpd,6),\
 round(self.size,4),round(self.effMH,2),round(self.effAtt,2),\
 round(self.effAttR,2),round(self.effAggR,2))
 
-    def findDistance(self,fpos,ident,target=None,targetAge=None):
-        # Will be replaced soon with the Desire system.
-        dist = sqrt((self.pos[0]-fpos[0])**2+(self.pos[1]-fpos[1])**2)
-        if ident == "Blob" and dist < self.distToClosestBlob:
-            self.distToClosestBlob = dist
-            self.targetBlobPos = fpos
-            self.target = target
-            self.targetAge = targetAge
-        if ident == "Food" and dist < self.distToClosestFood:
-            self.distToClosestFood = dist
-            self.targetFoodPos = fpos
-        return dist
-
     def calcDesire(self,ident):
         desire = 0
         i = ident
@@ -341,16 +331,24 @@ round(self.effAttR,2),round(self.effAggR,2))
             if type(i) == Blob:
                 desire += i.food/100
             if type(i) == Meat:
-                desire += i.food/40
+                desire += (i.food/30 + 20)
             if type(i) == Plant:
-                desire += 10
+                desire += 20
         else:
             if type(i) == Plant:
-                desire += 50
+                desire += 40
         if type(i) == Blob:
             desire += (self.attack-i.attack)
+            desire += (self.speed*50-i.speed*50)
+            desire += (self.health-self.mHealth)/self.mHealth*60
+            if not self.aggro and i.aggro:
+                desire -= 2
+            if i.age < immunityTime or self.age < immunityTime:
+                desire = 0
         dist = sqrt((self.pos[0]-fpos[0])**2+(self.pos[1]-fpos[1])**2)
         desire *= (1/(dist/aggRange))
+        if dist > 1.5*self.aggRange:
+            desire *= (1/(dist/aggRange))
         self.desires.append(Desire(ident,desire))
 
     def findAccel(self,fpos):
@@ -389,7 +387,7 @@ round(self.effAttR,2),round(self.effAggR,2))
             ipos = self.desires[i].ident.pos
             if (dist(self.pos,ipos) < 5):
                 self.applyForce(mult(normalize(sub(self.pos,ipos)),3))
-        if self.desires[len(self.desires)-1].desire <= -5:
+        if self.desires[len(self.desires)-1].desire <= -3:
             ipos = self.desires[len(self.desires)-1].ident.pos
             self.applyForce(mult(normalize(sub(self.pos,ipos)),self.effSpd))
         else:
@@ -534,13 +532,15 @@ while True:
         plants.append(Plant([uniform(10,screenWidth-10),\
         uniform(10,screenHeight-10)]))
         plantCooldown = plantInterval
+    for i in range(len(blobs)):
+        blobs[i].index = i
     # The blob loop.
     for i in range(len(blobs)-1, -1, -1):
-        # This loop determines distance to all other blobs.
+        # This loop determines desire with all other blobs.
         for j in range(len(blobs)):
             if i != j:
                 blobs[i].calcDesire(blobs[j])
-        # This loop determines distance to all plants.
+        # This loop deals with interactions to all plants.
         for j in range(len(plants)-1, -1, -1):
             blobs[i].calcDesire(plants[j])
             # If they are close enough, eat the plant.
@@ -554,6 +554,7 @@ while True:
                 blobs[i].health += blobs[i].effMH/6
         # This loop determines distance to all meat.
         for j in range(len(meat)-1, -1, -1):
+            blobs[i].calcDesire(meat[j])
             # If they are close enough, eat the meat.
             if dist(blobs[i].pos,meat[j].pos) < 10:
                 meat[j].alive = False
@@ -567,12 +568,16 @@ while True:
         blobs[i].AI()
         # Attack sequence. If the blob can attack, it will attack the nearest
         # blob to it.
-        if dist(blobs[i].pos,blobs[blobs[i].target].pos) < blobs[i].effAttR and\
-        blobs[i].attackCooldown <= 0 and blobs[i].age > immunityTime and\
-        blobs[blobs[i].target].age > immunityTime:
-            blobs[i].attackCooldown = 150
-            blobs[blobs[i].target].health -= blobs[i].effAtt*\
-            (blobs[i].size**sizeHealthBuff)
+        if type(blobs[i].desires[0].ident) == Blob:
+            ident = blobs[i].desires[0].ident
+            if blobs[i].attackCooldown <= 0:
+                blobs[i].attackTarget = ident.pos
+            if dist(blobs[i].pos,ident.pos) < blobs[i].attackRange and\
+            ident.age > immunityTime and blobs[i].age > immunityTime and\
+            blobs[i].attackCooldown <= 0:
+                blobs[i].attackCooldown = 150
+                blobs[ident.index].health -= blobs[i].effAtt*\
+                (blobs[i].size**sizeHealthBuff)
         # Update blob position, velocity, acceleration, AI values, etc.
         blobs[i].update()
         # If fast mode is active, do not draw any blobs.
