@@ -340,7 +340,7 @@ round(self.effAttR,2),round(self.effAggR,2))
         if type(i) == Blob:
             desire += (self.attack-i.attack)
             desire += (self.speed*50-i.speed*50)
-            desire += (self.health-self.mHealth)/self.mHealth*60
+            desire += (self.health-self.mHealth)/self.mHealth*50
             if not self.aggro and i.aggro:
                 desire -= 2
             if i.age < immunityTime or self.age < immunityTime:
