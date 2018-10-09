@@ -24,11 +24,11 @@ screenHeight = 900
 # Width of the window.
 screenWidth = 1500
 # Velocity of all blobs is multiplied by (1 - this amount) every frame.
-drag = 0.007
+drag = 0.012
 # Changes the magnitude of mutations. Don't set this too high!
-mutationMult = 1
+mutationMult = 2
 # How different the blobs are from each other at the start.
-randomStartMult = 0.05
+randomStartMult = 0.1
 # How bouncy the edges of the screen are.
 wallElasticity = 1.8
 # Initial time before plants can generate.
@@ -36,33 +36,33 @@ plantCooldown = 200
 # Time, in frames, between when each plant spawns.
 plantInterval = 30
 # The amount of food a plant gives when eaten.
-plantFood = 650
+plantFood = 1000
 # The base amount of food that meat gives when eaten.
-meatFood = 3000
+meatFood = 2500
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
-meatFoodDroppedMult = 0.6
+meatFoodDroppedMult = 0.4
 # How much food a blob gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 0.6
+wrongFoodMult = 0.5
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
-aggroFalseBuff = 1.0
+aggroFalseBuff = 1.05
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
-aggroTrueBuff = 1.4
+aggroTrueBuff = 1.6
 # The amount of food a blob needs to reproduce.
 reproThreshold = 10000
 # The amount of time blobs have to run away from their parents after they are born.
-immunityTime = 1000
+immunityTime = 600
 # How powerful acceleration is.
 accMult = 0.7
 # How fast blobs are in the start.
-speedMult = 0.9
+speedMult = 1.4
 # Affects the top speed of blobs.
 speedLimitMod = 50
 # Affects the amount of damage and health a blob gets from having a high size.
 sizeHealthBuff = 1.4
 # How much of a blobs' food ticks away every frame.
-metabolismBase = 1
+metabolismBase = 1.5
 # Affects the increased food costs for having high health or speed.
 metabolismModMult = 0
 # Only used for printing the blob number in the console.
@@ -87,6 +87,9 @@ def sub(v1,v2):
 
 def mult(v1,mult):
     return [v1[0]*mult,v1[1]*mult]
+
+def div(v1,div):
+    return [v1[0]/div,v1[1]/div]
 
 def dist(v1,v2):
     return sqrt((v1[0]-v2[0])**2+(v1[1]-v2[1])**2)
@@ -274,8 +277,6 @@ class Blob:
         # The amount of food that ticks away every frame.
         self.metabolism = metabolismBase+\
         (self.speed*60+self.mHealth/80)*metabolismModMult
-        if not self.aggro:
-            self.metabolism *= 0.5
         # If false, blob is deleted from existence.
         self.alive = True
         # These values deal with the AI of the blob.
@@ -329,26 +330,29 @@ round(self.effAttR,2),round(self.effAggR,2))
         fpos = i.pos
         if self.aggro:
             if type(i) == Blob:
-                desire += i.food/100
+                desire += i.food/80
             if type(i) == Meat:
                 desire += (i.food/30 + 20)
             if type(i) == Plant:
                 desire += 20
         else:
             if type(i) == Plant:
-                desire += 40
+                desire += 100
         if type(i) == Blob:
-            desire += (self.effAtt-i.effAtt)
-            desire += (self.effSpd*50-i.effSpd*50)
-            desire += (self.health-self.effMH)/self.effMH*50
-            if not self.aggro and i.aggro:
-                desire -= 2
+            desire += (self.effAtt-i.effAtt)*5
+            desire += (self.effSpd-i.effSpd)*50
+            desire += (self.health-self.effMH)/self.effMH*80
+            desire += (i.effMH-i.health)/i.effMH*30
+            if self.aggro and not i.aggro:
+                desire += 20
+            if self.aggro and i.aggro:
+                desire -= 10
             if i.age < immunityTime or self.age < immunityTime:
                 desire = 0
         dist = sqrt((self.pos[0]-fpos[0])**2+(self.pos[1]-fpos[1])**2)
-        desire *= (1/(dist/aggRange))
+        desire *= (1/(dist/self.aggRange))
         if dist > 1.5*self.aggRange:
-            desire *= (1/(dist/aggRange))
+            desire *= (1/(dist/self.aggRange))
         self.desires.append(Desire(ident,desire))
 
     def findAccel(self,fpos):
@@ -364,7 +368,7 @@ round(self.effAttR,2),round(self.effAggR,2))
             deg = atan(posDiff[0]/-posDiff[1])+radians(180)
         if posDiff[0] < 0 and posDiff[1] <= 0:
             deg = atan(-posDiff[1]/-posDiff[0])+radians(270)
-        return [sin(deg)*self.effSpd,-cos(deg)*self.effSpd]
+        return [sin(deg),-cos(deg)]
 
     def applyForce(self,force):
         # Input force vector, blob moves in that direction.
@@ -385,9 +389,9 @@ round(self.effAttR,2),round(self.effAggR,2))
             self.lookingAround = True
         for i in range(len(self.desires)):
             ipos = self.desires[i].ident.pos
-            if (dist(self.pos,ipos) < 4):
-                self.applyForce(normalize(sub(self.pos,ipos)))
-        if self.desires[len(self.desires)-1].desire <= -3:
+            if (dist(self.pos,ipos) < 8):
+                self.applyForce(div(normalize(sub(self.pos,ipos)),5))
+        if self.desires[len(self.desires)-1].desire<=-self.desires[0].desire/10:
             ipos = self.desires[len(self.desires)-1].ident.pos
             self.applyForce(mult(normalize(sub(self.pos,ipos)),self.effSpd))
         else:
@@ -443,7 +447,7 @@ round(self.effAttR,2),round(self.effAggR,2))
         self.vel[1] = min(max(self.vel[1],-self.effSpd*speedLimitMod),\
         self.effSpd*speedLimitMod)
         if self.attackCooldown > 0:
-            self.attackCooldown -= 2
+            self.attackCooldown -= 3
         if self.food < 1 or self.health < 1:
             self.alive = False
         if self.health > self.effMH:
@@ -496,7 +500,7 @@ for i in range(10):
         mHealth = uniform(60-10*rm,60+10*rm)
     else:
         speed = uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult
-        aggRange = uniform(50-10*rm,50+10*rm)*(aggroTrueBuff+0.2)
+        aggRange = uniform(50-10*rm,50+10*rm)*1.2
         attack = uniform(5-1*rm,5+1*rm)*aggroTrueBuff
         attackRange = uniform(40-5*rm,40+5*rm)*aggroTrueBuff
         mHealth = uniform(60-10*rm,60+10*rm)
@@ -597,7 +601,7 @@ while True:
         # food capacity/repro threshold, they start the reproduction sequence.
         if blobs[i].food > blobs[i].reproThreshold:
             blobs[i].reproTime += 200
-            blobs[i].food -= reproThreshold/2
+            blobs[i].food -= blobs[i].reproThreshold/2
         if blobs[i].reproTime % 200 == 1:
             # This reproduce() should probably be built into the blob object.
             reproduce(blobs[i].pos,blobs[i].vel,blobs[i].speed,blobs[i].aggro\
