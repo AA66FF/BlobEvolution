@@ -27,6 +27,10 @@ screenWidth = 1500
 drag = 0.01
 # Changes the magnitude of mutations. Don't set this too high!
 mutationMult = 2
+# Changes the magnitude of speed mutations. If 0, speed mutations will not occur.
+speedMutationMult = 0
+# Changes the magnitude of size mutations. If 0, size mutations will not occur.
+sizeMutationMult = 0.5
 # How different the blobs are from each other at the start.
 randomStartMult = 0.1
 # How bouncy the edges of the screen are.
@@ -62,7 +66,7 @@ speedLimitMod = 60
 # Affects the amount of damage and health a blob gets from having a high size.
 sizeHealthBuff = 1.4
 # How much of a blobs' food ticks away every frame.
-metabolismBase = 1.5
+metabolismBase = 2
 # Affects the increased food costs for having high health or speed.
 metabolismModMult = 0
 # Only used for printing the blob number in the console.
@@ -121,6 +125,8 @@ def angle(vector):
 def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
     r = randint(0,6)
     mm = mutationMult
+    smm = speedMutationMult
+    szm = sizeMutationMult
     c = [min(max(color[0]+uniform(-30,30),0),255),\
     min(max(color[1]+uniform(-30,30),0),255),\
     min(max(color[2]+uniform(-30,30),0),255)]
@@ -129,8 +135,8 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
         rr = randint(0,5)
         if rr == 5:
             a = not a
-        return [speed+uniform(-0.0006*mm,0.0006*mm),a,aggRange+\
-        uniform(-3*mm,3*mm),size,\
+        return [speed+uniform(-0.0006*mm,0.0006*mm)*smm,a,aggRange+\
+        uniform(-3*mm,3*mm),size+uniform(-0.009*mm,0.009*mm)*szm,\
         attack+uniform(-0.6*mm,0.6*mm),attackRange+uniform(-3*mm,\
         3*mm),mHealth+uniform(-6*mm,6*mm),c]
     else:
@@ -138,8 +144,8 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
         rr = randint(0,17)
         if rr == 17:
             a = not a
-        return [speed+uniform(-0.0002*mm,0.0002*mm),a,aggRange+\
-        uniform(-1*mm,1*mm),size,\
+        return [speed+uniform(-0.0002*mm,0.0002*mm)*smm,a,aggRange+\
+        uniform(-1*mm,1*mm),size+uniform(-0.003*mm,0.003*mm)*szm,\
         attack+uniform(-0.2*mm,0.2*mm),attackRange+uniform(-1*mm,\
         1*mm),mHealth+uniform(-2*mm,2*mm),c]
 
@@ -278,7 +284,7 @@ class Blob:
         self.metabolism = metabolismBase+\
         (self.speed*60+self.mHealth/80)*metabolismModMult
         if not self.aggro:
-            self.metabolism /= 1.5
+            self.metabolism /= 2
         # If false, blob is deleted from existence.
         self.alive = True
         # These values deal with the AI of the blob.
@@ -353,8 +359,10 @@ round(self.effAttR,2),round(self.effAggR,2))
                 desire += 20
             if self.aggro and i.aggro:
                 desire -= 10
-            if i.age < immunityTime or self.age < immunityTime:
+            if i.age < immunityTime:
                 desire = 0
+            if self.age < immunityTime:
+                desire = -10
         dist = sqrt((self.pos[0]-fpos[0])**2+(self.pos[1]-fpos[1])**2)
         desire *= (1/(dist/self.aggRange))
         if dist > 1.5*self.aggRange:
