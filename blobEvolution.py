@@ -66,7 +66,7 @@ speedLimitMod = 60
 # Affects the amount of damage and health a blob gets from having a high size.
 sizeHealthBuff = 1.4
 # How much of a blobs' food ticks away every frame.
-metabolismBase = 2
+metabolismBase = 1.8
 # Affects the increased food costs for having high health or speed.
 metabolismModMult = 0
 # Only used for printing the blob number in the console.
@@ -284,7 +284,7 @@ class Blob:
         self.metabolism = metabolismBase+\
         (self.speed*60+self.mHealth/80)*metabolismModMult
         if not self.aggro:
-            self.metabolism /= 2
+            self.metabolism /= 1.8
         # If false, blob is deleted from existence.
         self.alive = True
         # These values deal with the AI of the blob.
@@ -497,23 +497,25 @@ class Meat:
         if self.food <= 0:
             self.alive = False
 
-for i in range(10):
+for i in range(15):
     # Generate all blobs.
     # Determine if this blob is predator or prey.
     aggro = False
     r = randint(0,2)
     rm = randomStartMult
+    smm = speedMutationMult
     if r == 2:
         aggro = True
     # Depending on their aggro value, set their stats accordingly.
     if not aggro:
-        speed = uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult*aggroFalseBuff
+        speed = uniform(0.01-0.002*rm*smm,0.01+0.002*rm*smm)*speedMult\
+        *aggroFalseBuff
         aggRange = uniform(50-10*rm,50+10*rm)
         attack = uniform(5-1*rm,5+1*rm)
         attackRange = uniform(40-5*rm,40+5*rm)
         mHealth = uniform(60-10*rm,60+10*rm)
     else:
-        speed = uniform(0.01-0.002*rm,0.01+0.002*rm)*speedMult
+        speed = uniform(0.01-0.002*rm*smm,0.01+0.002*rm*smm)*speedMult
         aggRange = uniform(50-10*rm,50+10*rm)*1.2
         attack = uniform(5-1*rm,5+1*rm)*aggroTrueBuff
         attackRange = uniform(40-5*rm,40+5*rm)*aggroTrueBuff
