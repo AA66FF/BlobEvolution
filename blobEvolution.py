@@ -30,7 +30,7 @@ mutationMult = 2
 # Changes the magnitude of speed mutations. If 0, speed mutations will not occur.
 speedMutationMult = 0
 # Changes the magnitude of size mutations. If 0, size mutations will not occur.
-sizeMutationMult = 0.5
+sizeMutationMult = 0
 # How different the blobs are from each other at the start.
 randomStartMult = 0.1
 # How bouncy the edges of the screen are.
@@ -130,6 +130,8 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
     c = [min(max(color[0]+uniform(-30,30),0),255),\
     min(max(color[1]+uniform(-30,30),0),255),\
     min(max(color[2]+uniform(-30,30),0),255)]
+    print(smm)
+    print(uniform(-0.0006*mm,0.0006*mm)*smm)
     if r == 6:
         a = aggro
         rr = randint(0,5)
