@@ -24,7 +24,7 @@ screenHeight = 900
 # Width of the window.
 screenWidth = 1500
 # Velocity of all blobs is multiplied by (1 - this amount) every frame.
-drag = 0.012
+drag = 0.01
 # Changes the magnitude of mutations. Don't set this too high!
 mutationMult = 2
 # How different the blobs are from each other at the start.
@@ -38,11 +38,11 @@ plantInterval = 30
 # The amount of food a plant gives when eaten.
 plantFood = 1000
 # The base amount of food that meat gives when eaten.
-meatFood = 2500
+meatFood = 2000
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
 meatFoodDroppedMult = 0.4
 # How much food a blob gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 0.5
+wrongFoodMult = 0.4
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
@@ -54,11 +54,11 @@ reproThreshold = 10000
 # The amount of time blobs have to run away from their parents after they are born.
 immunityTime = 600
 # How powerful acceleration is.
-accMult = 0.7
+accMult = 1.2
 # How fast blobs are in the start.
-speedMult = 1.4
+speedMult = 0.7
 # Affects the top speed of blobs.
-speedLimitMod = 50
+speedLimitMod = 60
 # Affects the amount of damage and health a blob gets from having a high size.
 sizeHealthBuff = 1.4
 # How much of a blobs' food ticks away every frame.
@@ -338,11 +338,15 @@ round(self.effAttR,2),round(self.effAggR,2))
         else:
             if type(i) == Plant:
                 desire += 100
+            if type(i) == Meat:
+                desire += (i.food/50)
         if type(i) == Blob:
             desire += (self.effAtt-i.effAtt)*5
             desire += (self.effSpd-i.effSpd)*50
             desire += (self.health-self.effMH)/self.effMH*80
             desire += (i.effMH-i.health)/i.effMH*30
+            if self.effMH > i.effMH:
+                desire += (self.effMH-i.effMH)/4
             if self.aggro and not i.aggro:
                 desire += 20
             if self.aggro and i.aggro:
