@@ -277,6 +277,8 @@ class Blob:
         # The amount of food that ticks away every frame.
         self.metabolism = metabolismBase+\
         (self.speed*60+self.mHealth/80)*metabolismModMult
+        if not self.aggro:
+            self.metabolism /= 1.5
         # If false, blob is deleted from existence.
         self.alive = True
         # These values deal with the AI of the blob.
