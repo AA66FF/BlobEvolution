@@ -30,7 +30,7 @@ mutationMult = 2
 # Changes the magnitude of speed mutations. If 0, speed mutations will not occur.
 speedMutationMult = 0
 # Changes the magnitude of size mutations. If 0, size mutations will not occur.
-sizeMutationMult = 0
+sizeMutationMult = 0.5
 # How different the blobs are from each other at the start.
 randomStartMult = 0.1
 # How bouncy the edges of the screen are.
@@ -130,8 +130,6 @@ def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
     c = [min(max(color[0]+uniform(-30,30),0),255),\
     min(max(color[1]+uniform(-30,30),0),255),\
     min(max(color[2]+uniform(-30,30),0),255)]
-    print(smm)
-    print(uniform(-0.0006*mm,0.0006*mm)*smm)
     if r == 6:
         a = aggro
         rr = randint(0,5)
@@ -516,15 +514,17 @@ for i in range(15):
         attack = uniform(5-1*rm,5+1*rm)
         attackRange = uniform(40-5*rm,40+5*rm)
         mHealth = uniform(60-10*rm,60+10*rm)
+        size = uniform(1-0.05*rm*sizeMutationMult,1+0.05*rm*sizeMutationMult)
     else:
         speed = uniform(0.01-0.002*rm*smm,0.01+0.002*rm*smm)*speedMult
         aggRange = uniform(50-10*rm,50+10*rm)*1.2
         attack = uniform(5-1*rm,5+1*rm)*aggroTrueBuff
         attackRange = uniform(40-5*rm,40+5*rm)*aggroTrueBuff
         mHealth = uniform(60-10*rm,60+10*rm)
+        size = uniform(1-0.05*rm*sizeMutationMult,1+0.05*rm*sizeMutationMult)
     # Add blob to blob list.
     blobs.append(Blob([uniform(10,screenWidth-10),uniform(10,\
-    screenHeight-10)],[0,0],speed,aggro,aggRange,1,attack,\
+    screenHeight-10)],[0,0],speed,aggro,aggRange,size,attack,\
     attackRange,mHealth,reproThreshold/2,\
     [uniform(0,255),uniform(0,255),uniform(0,255)]))
     print(blobs[i])
@@ -586,7 +586,7 @@ while True:
                 else:
                     blobs[i].food += meat[j].food*wrongFoodMult
                 blobs[i].health += blobs[i].effMH
-        # Make the blobs react to the distance data collected.
+        # Make the blobs react to their desires.
         blobs[i].AI()
         # Attack sequence. If the blob can attack, it will attack the nearest
         # blob to it.
