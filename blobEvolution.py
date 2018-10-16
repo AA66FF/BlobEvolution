@@ -337,8 +337,10 @@ round(self.effAttR,2),round(self.effAggR,2))
         i = ident
         fpos = i.pos
         if self.aggro:
-            if type(i) == Blob:
-                desire += i.food/80
+            if type(i) == Blob and i.aggro:
+                desire += 70
+            if type(i) == Blob and not i.aggro:
+                desire += (i.food/60 + 10)
             if type(i) == Meat:
                 desire += (i.food/30 + 20)
             if type(i) == Plant:
