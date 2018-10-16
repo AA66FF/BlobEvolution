@@ -44,9 +44,9 @@ plantFood = 1000
 # The base amount of food that meat gives when eaten.
 meatFood = 2000
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
-meatFoodDroppedMult = 0.4
+meatFoodDroppedMult = 0.6
 # How much food a blob gets from eating the wrong kind of food for its diet.
-wrongFoodMult = 0.4
+wrongFoodMult = 0.2
 # Used in FPS calculations.
 frame = 0
 # Prey blobs' speed is multiplied by this amount.
