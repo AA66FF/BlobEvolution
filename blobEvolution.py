@@ -28,7 +28,7 @@ drag = 0.01
 # Changes the magnitude of mutations. Don't set this too high!
 mutationMult = 2
 # Changes the magnitude of speed mutations. If 0, speed mutations will not occur.
-speedMutationMult = 0
+speedMutationMult = 0.5
 # Changes the magnitude of size mutations. If 0, size mutations will not occur.
 sizeMutationMult = 0.5
 # How different the blobs are from each other at the start.
