@@ -44,7 +44,7 @@ plantFood = 1000
 # The base amount of food that meat gives when eaten.
 meatFood = 2000
 # The percentage of food that a dead blob drops when it dies. (Not actual percent)
-meatFoodDroppedMult = 0.6
+meatFoodDroppedMult = 0.45
 # How much food a blob gets from eating the wrong kind of food for its diet.
 wrongFoodMult = 0.2
 # Used in FPS calculations.
@@ -52,7 +52,7 @@ frame = 0
 # Prey blobs' speed is multiplied by this amount.
 aggroFalseBuff = 1.05
 # Predator blobs' attack damage, range, and aggro range is multiplied by this amount.
-aggroTrueBuff = 1.6
+aggroTrueBuff = 1.5
 # The amount of food a blob needs to reproduce.
 reproThreshold = 10000
 # The amount of time blobs have to run away from their parents after they are born.
