@@ -402,21 +402,6 @@ round(self.effAttR,2),round(self.effAggR,2))
             desire *= (1/(dist/self.aggRange))
         self.desires.append(Desire(ident,desire))
 
-    def findAccel(self,fpos):
-        # This function determines the direction of acceleration, and contructs
-        # a vector using trigonometry.
-        deg = 0
-        posDiff = [(self.pos[0]-fpos[0])*-1,(self.pos[1]-fpos[1])*-1]
-        if posDiff[0] >= 0 and posDiff[1] < 0:
-            deg = atan(posDiff[0]/-posDiff[1])
-        if posDiff[0] > 0 and posDiff[1] >= 0:
-            deg = atan(-posDiff[1]/-posDiff[0])+radians(90)
-        if posDiff[0] <= 0 and posDiff[1] > 0:
-            deg = atan(posDiff[0]/-posDiff[1])+radians(180)
-        if posDiff[0] < 0 and posDiff[1] <= 0:
-            deg = atan(-posDiff[1]/-posDiff[0])+radians(270)
-        return [sin(deg),-cos(deg)]
-
     def applyForce(self,force):
         # Input force vector, blob moves in that direction.
         f = force
