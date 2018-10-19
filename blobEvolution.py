@@ -1,7 +1,5 @@
 """
 blobEvolution.py, my little life simulation project.
-I should probably comment this code more.
-It's badly organized and even more badly optimized. I'm working on that.
 
 Todo:
   Have blobs fire projectiles instead of lasers
@@ -77,6 +75,7 @@ fast = False
 blobs = []
 plants = []
 meat = []
+bullets = []
 
 win = GraphWin("Blob Evolution", screenWidth, screenHeight)
 win.setBackground(color_rgb(160,230,230))
@@ -121,42 +120,6 @@ def angle(vector):
     if vector[0] < 0 and vector[1] <= 0:
         deg = atan(-vector[1]/-vector[0])+radians(270)
     return deg
-
-def mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color):
-    r = randint(0,6)
-    mm = mutationMult
-    smm = speedMutationMult
-    szm = sizeMutationMult
-    c = [min(max(color[0]+uniform(-30,30),0),255),\
-    min(max(color[1]+uniform(-30,30),0),255),\
-    min(max(color[2]+uniform(-30,30),0),255)]
-    if r == 6:
-        a = aggro
-        rr = randint(0,5)
-        if rr == 5:
-            a = not a
-        return [speed+uniform(-0.0006*mm,0.0006*mm)*smm,a,aggRange+\
-        uniform(-3*mm,3*mm),size+uniform(-0.009*mm,0.009*mm)*szm,\
-        attack+uniform(-0.6*mm,0.6*mm),attackRange+uniform(-3*mm,\
-        3*mm),mHealth+uniform(-6*mm,6*mm),c]
-    else:
-        a = aggro
-        rr = randint(0,17)
-        if rr == 17:
-            a = not a
-        return [speed+uniform(-0.0002*mm,0.0002*mm)*smm,a,aggRange+\
-        uniform(-1*mm,1*mm),size+uniform(-0.003*mm,0.003*mm)*szm,\
-        attack+uniform(-0.2*mm,0.2*mm),attackRange+uniform(-1*mm,\
-        1*mm),mHealth+uniform(-2*mm,2*mm),c]
-
-def reproduce(pos,vel,speed,aggro,aggRange,size,attack,attackRange,mHealth,\
-    color):
-        m = mutate(speed,aggro,aggRange,size,attack,attackRange,mHealth,color)
-        r = uniform(-1,1)
-        newBlob = Blob([pos[0]+r,pos[1]+r],[vel[0]*-2,vel[1]*-2],\
-        m[0],m[1],m[2],m[3],m[4],m[5],m[6],reproThreshold/2,m[7])
-        blobs.append(newBlob)
-        print(newBlob)
 
 class SubSprite:
     # Part of Sprites. Shapes are drawn here.
@@ -233,23 +196,57 @@ class Desire:
     def __repr__(self):
         return "{}".format(self.desire)
 
+class Bullet:
+    # Blobs shoot these
+    def __init__(self):
+        self.pos = [0,0]
+        self.vel = [0,0]
+        self.lifetime = 100
+        self.damage = 5
+
+    def draw(self):
+        pass
+
 class Blob:
 # The main component of the simulation
 
-    def __init__(self, pos, vel, speed, aggro, aggRange, size, attack, \
-    attackRange, mHealth, food, color):
+    def __init__(self, pos):
         self.index = 0
+        global blobNum
+        blobNum += 1
+        # Whether or not the blob will chase other blobs. (boolean)
+        self.aggro = False
+        # Random stats generation
+        r = randint(0,2)
+        rm = randomStartMult
+        smm = speedMutationMult
+        if r == 2:
+            self.aggro = True
+        # Depending on their aggro value, set their stats accordingly.
+        if not self.aggro:
+            speed = uniform(0.01-0.002*rm*smm,0.01+0.002*rm*smm)*speedMult\
+            *aggroFalseBuff
+            aggRange = uniform(50-10*rm,50+10*rm)
+            attack = uniform(5-1*rm,5+1*rm)
+            attackRange = uniform(40-5*rm,40+5*rm)
+            mHealth = uniform(60-10*rm,60+10*rm)
+            size = uniform(1-0.05*rm*sizeMutationMult,1+0.05*rm*sizeMutationMult)
+        else:
+            speed = uniform(0.01-0.002*rm*smm,0.01+0.002*rm*smm)*speedMult
+            aggRange = uniform(50-10*rm,50+10*rm)*1.2
+            attack = uniform(5-1*rm,5+1*rm)*aggroTrueBuff
+            attackRange = uniform(40-5*rm,40+5*rm)*aggroTrueBuff
+            mHealth = uniform(60-10*rm,60+10*rm)
+            size = uniform(1-0.05*rm*sizeMutationMult,1+0.05*rm*sizeMutationMult)
         # Position vector. (must be list)
         self.pos = pos
         # Velocity vector. (must be list)
-        self.vel = vel
+        self.vel = [uniform(-1,1),uniform(-1,1)]
         # Acceleration vector.
         self.acc = [0,0]
         # How fast the blob can accelerate. Also affects their speed limit.
         self.speed = speed
         self.effSpd = speed
-        # Whether or not the blob will chase other blobs. (boolean)
-        self.aggro = aggro
         # If above 0, blob will run away from the nearest blob.
         self.fear = 0
         # The range of aggro's effect.
@@ -279,7 +276,7 @@ class Blob:
         # Health of the blob. Death happens at 0.
         self.health = self.effMH
         # The amount of food that the blob has. Death happens at 0.
-        self.food = food
+        self.food = reproThreshold/2
         # The amount of food that ticks away every frame.
         self.metabolism = metabolismBase+\
         (self.speed*60+self.mHealth/80)*metabolismModMult
@@ -331,6 +328,40 @@ Attack Range: {}\n\
 Aggro Range: {}\n".format(blobNum,self.aggro,round(self.effSpd,6),\
 round(self.size,4),round(self.effMH,2),round(self.effAtt,2),\
 round(self.effAttR,2),round(self.effAggR,2))
+
+    def reproduce(self):
+        blob = Blob([self.pos[0]+uniform(-1,1),self.pos[1]+uniform(-1,1)])
+        r = randint(0,6)
+        mm = mutationMult
+        smm = speedMutationMult
+        szm = sizeMutationMult
+        if r == 6:
+            rr = random()
+            if rr > 0.7:
+                blob.aggro = not self.aggro
+            else:
+                blob.aggro = self.aggro
+            blob.speed = self.speed+uniform(-0.0006*mm,0.0006*mm)*smm
+            blob.aggRange = self.aggRange+uniform(-3*mm,3*mm)
+            blob.size = self.size+uniform(-0.009*mm,0.009*mm)*szm
+            blob.attack = self.attack+uniform(-0.6*mm,0.6*mm)
+            blob.attackRange = self.attackRange+uniform(-3*mm,3*mm)
+            blob.mHealth = self.mHealth+uniform(-6*mm,6*mm)
+        else:
+            rr = random()
+            if rr > 0.9:
+                blob.aggro = not self.aggro
+            else:
+                blob.aggro = self.aggro
+            blob.speed = self.speed+uniform(-0.0002*mm,0.0002*mm)*smm
+            blob.aggRange = self.aggRange+uniform(-1*mm,1*mm)
+            blob.size = self.size+uniform(-0.003*mm,0.003*mm)*szm
+            blob.attack = self.attack+uniform(-0.2*mm,0.2*mm)
+            blob.attackRange = self.attackRange+uniform(-1*mm,1*mm)
+            blob.mHealth = self.mHealth+uniform(-2*mm,2*mm)
+        blob.vel = mult(self.vel,-2)
+        blobs.append(blob)
+        print(blob)
 
     def calcDesire(self,ident):
         desire = 0
@@ -469,7 +500,11 @@ round(self.effAttR,2),round(self.effAggR,2))
         if self.health > self.effMH:
             self.health = self.effMH
         self.age += 1
-        self.fear -= 1
+        if self.food > self.reproThreshold:
+            self.reproTime += 200
+            self.food -= self.reproThreshold/2
+        if self.reproTime % 200 == 1:
+            self.reproduce()
         if self.reproTime > 0:
             self.reproTime -= 1
 
@@ -501,37 +536,9 @@ class Meat:
 
 for i in range(15):
     # Generate all blobs.
-    # Determine if this blob is predator or prey.
-    aggro = False
-    r = randint(0,2)
-    rm = randomStartMult
-    smm = speedMutationMult
-    if r == 2:
-        aggro = True
-    # Depending on their aggro value, set their stats accordingly.
-    if not aggro:
-        speed = uniform(0.01-0.002*rm*smm,0.01+0.002*rm*smm)*speedMult\
-        *aggroFalseBuff
-        aggRange = uniform(50-10*rm,50+10*rm)
-        attack = uniform(5-1*rm,5+1*rm)
-        attackRange = uniform(40-5*rm,40+5*rm)
-        mHealth = uniform(60-10*rm,60+10*rm)
-        size = uniform(1-0.05*rm*sizeMutationMult,1+0.05*rm*sizeMutationMult)
-    else:
-        speed = uniform(0.01-0.002*rm*smm,0.01+0.002*rm*smm)*speedMult
-        aggRange = uniform(50-10*rm,50+10*rm)*1.2
-        attack = uniform(5-1*rm,5+1*rm)*aggroTrueBuff
-        attackRange = uniform(40-5*rm,40+5*rm)*aggroTrueBuff
-        mHealth = uniform(60-10*rm,60+10*rm)
-        size = uniform(1-0.05*rm*sizeMutationMult,1+0.05*rm*sizeMutationMult)
-    # Add blob to blob list.
     blobs.append(Blob([uniform(10,screenWidth-10),uniform(10,\
-    screenHeight-10)],[0,0],speed,aggro,aggRange,size,attack,\
-    attackRange,mHealth,reproThreshold/2,\
-    [uniform(0,255),uniform(0,255),uniform(0,255)]))
+    screenHeight-10)]))
     print(blobs[i])
-    # Increment blobNum for the console.
-    blobNum += 1
 
 for i in range(50):
     # Generate 50 plants for the blobs to eat in the start.
@@ -615,19 +622,6 @@ while True:
             meat.append(Meat(blobs[i].pos,blobs[i].food*meatFoodDroppedMult\
             +meatFood))
             del blobs[i]
-    # Reproduction loop. Separate from blob loop.
-    for i in range(len(blobs)):
-        # If the blob's food level is higher than their
-        # food capacity/repro threshold, they start the reproduction sequence.
-        if blobs[i].food > blobs[i].reproThreshold:
-            blobs[i].reproTime += 200
-            blobs[i].food -= blobs[i].reproThreshold/2
-        if blobs[i].reproTime % 200 == 1:
-            # This reproduce() should probably be built into the blob object.
-            reproduce(blobs[i].pos,blobs[i].vel,blobs[i].speed,blobs[i].aggro\
-            ,blobs[i].aggRange,blobs[i].size,blobs[i].attack,\
-            blobs[i].attackRange,blobs[i].mHealth,blobs[i].color)
-            blobNum += 1
     # Plant loop, only responsible for deleting plants.
     for i in range(len(plants)-1, -1, -1):
         if not plants[i].alive:
