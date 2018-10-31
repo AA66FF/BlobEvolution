@@ -392,6 +392,8 @@ round(self.effAttR,2),round(self.effAggR,2))
                 desire += 20
             if self.aggro and i.aggro:
                 desire -= 10
+            if not self.aggro and desire > 0:
+                desire /= 10
             if i.age < immunityTime:
                 desire = 0
             if self.age < immunityTime:
